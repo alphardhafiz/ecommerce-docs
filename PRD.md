@@ -660,6 +660,45 @@ Format response sukses standar:
 ```
 `meta` hanya muncul pada endpoint dengan pagination.
 
+### /health
+
+| Method | Endpoint | Auth | Deskripsi |
+|---|---|---|---|
+| GET | /health | Public | Liveness — proses hidup, selalu `200` |
+| GET | /health/ready | Public | Readiness — ping koneksi DB & Redis |
+
+**GET /health**
+Response `200`:
+```json
+{
+  "success": true,
+  "data": { "status": "ok" }
+}
+```
+
+**GET /health/ready**
+Response `200` (semua dependency siap):
+```json
+{
+  "success": true,
+  "data": { "db": "up", "redis": "up" }
+}
+```
+Response `503` (DB down — aplikasi tidak bisa melayani):
+```json
+{
+  "success": false,
+  "data": { "db": "down", "redis": "up" }
+}
+```
+Response `200` (Redis down — opsional, aplikasi tetap melayani, warning di response):
+```json
+{
+  "success": true,
+  "data": { "db": "up", "redis": "down (optional, app still serving)" }
+}
+```
+
 ### /auth
 
 | Method | Endpoint | Auth | Deskripsi |
