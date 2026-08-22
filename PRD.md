@@ -163,7 +163,7 @@ Otorisasi diimplementasikan di backend melalui middleware `RequireAuth()` (memva
 - Delete bersifat **soft delete** (lihat Database Design).
 - Activate/deactivate: mengubah `is_active`, produk inactive tidak muncul di listing publik dan tidak bisa di-checkout.
 - Stock management: update manual stock (misal restock), dicatat di log/audit sederhana (opsional Phase 2: stock movement history).
-- Product image: upload (ke object storage), set primary image, hapus image, reorder (kolom `display_order`).
+- Product image: upload (ke object storage), hapus image; `is_primary` otomatis (gambar pertama = primary, saat primary dihapus gambar berikutnya dipromote); reorder manual tidak termasuk MVP.
 
 **User:**
 - Listing produk dengan pagination (`page`, `limit`, default limit 12, max 50).
