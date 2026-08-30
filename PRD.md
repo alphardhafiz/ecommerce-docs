@@ -910,10 +910,48 @@ Response `409 ORDER_CANNOT_BE_CANCELLED` jika status bukan `PENDING`.
 | POST | /payments/webhook | Midtrans (signature-verified) | Terima notifikasi status pembayaran |
 | GET | /orders/:id/payment | User | Lihat status payment untuk order tertentu |
 
+**GET /orders/:id/payment**
+Response `200`:
+```json
+{
+  "success": true,
+  "data": {
+    "order_id": "o1...",
+    "status": "PENDING",
+    "amount": 178000,
+    "payment_type": null,
+    "paid_at": null
+  }
+}
+```
+`status` mengikuti payment status (`PENDING`/`SUCCESS`/`FAILED`/`EXPIRED`/`CANCELLED`), `paid_at` diisi hanya saat SUCCESS. Errors: `403 FORBIDDEN` (bukan pemilik), `404 NOT_FOUND` (order/payment tidak ada).
+
 ### /admin
 | Method | Endpoint | Auth | Deskripsi |
 |---|---|---|---|
 | GET | /admin/dashboard | Admin | Ringkasan metrics (dengan `period` query param) |
+
+**GET /admin/dashboard**
+Query params: `period` (`today`/`7d`/`30d`, opsional), `start_date` + `end_date` (custom range, `YYYY-MM-DD`; end inclusive).
+Response `200`:
+```json
+{
+  "success": true,
+  "data": {
+    "total_users": 10,
+    "total_products": 25,
+    "total_orders": 42,
+    "orders_by_status": { "PENDING": 5, "PAID": 10 },
+    "revenue": 1780000,
+    "low_stock": [ { "id": "p1...", "name": "Buku Kas", "stock": 3 } ]
+  }
+}
+```
+- `total_users` = users aktif; `total_products` = produk aktif (tidak soft-deleted).
+- `revenue` = jumlah `total_amount` order berstatus `PAID`/`PROCESSING`/`SHIPPED`/`COMPLETED` dalam periode (PRD §C.11).
+- Periode membatasi `orders.created_at`; `orders_by_status` & `total_orders` ikut periode.
+- `low_stock` = produk aktif dengan `stock <= 5` (threshold), diurutkan naik, max 20 item.
+- Errors: `400 VALIDATION_ERROR` (period/format tanggal tidak valid).
 
 ---
 
@@ -1351,7 +1389,7 @@ networks:
   internal:
 ```
 
-- **Environment variables:** `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION=false`, `STORAGE_*`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `FRONTEND_URL` (untuk link reset password), `CORS_ALLOWED_ORIGIN`. Disimpan di `.env` (permission 600), tidak masuk repo.
+- **Environment variables:** `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION=false`, `NOTIFICATION_URL` (webhook Midtrans saat create transaction; kosong = pakai setting dashboard), `STORAGE_*`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `FRONTEND_URL` (untuk link reset password + callbacks finish/unfinish/error Midtrans), `CORS_ALLOWED_ORIGIN`. Disimpan di `.env` (permission 600), tidak masuk repo.
 - **Reverse proxy & HTTPS:** Nginx sebagai reverse proxy, sertifikat via Let's Encrypt (Certbot), auto-renewal via cron/systemd timer.
 - **Domain/subdomain:** subdomain terpisah untuk API (`api.domain.com`) memudahkan CORS config dan cert terpisah.
 - **Database persistence:** volume Docker (`pgdata`) di-mount ke disk VPS, bukan ephemeral.
